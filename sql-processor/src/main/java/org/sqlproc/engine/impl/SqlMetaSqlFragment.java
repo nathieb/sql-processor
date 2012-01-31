@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sqlproc.engine.SqlFeature;
 
 /**
  * A META SQL sub-element.
@@ -121,18 +122,45 @@ class SqlMetaSqlFragment implements SqlMetaElement {
             String rest = matcher.group(2);
             s.delete(0, s.length());
             s.append(WHERE_PREFIX).append(rest);
+            if (optimistic) {
+                String versionColumn = SqlProcessContext.getFeature(SqlFeature.VERSION_COLUMN);
+                if (versionColumn == null || ctx.dynamicInputValues == null)
+                    return;
+                Object version = BeanUtils.getProperty(ctx.dynamicInputValues, versionColumn);
+                if (version != null) {
+                    // TODO - based on version type modify SQL, like " (AND)? version = :version "
+                }
+            }
 
         } else if (type == Type.SET && ctx.sqlStatementType == SqlMetaStatement.Type.UPDATE) {
             Matcher matcher = patternSet.matcher(s);
             String fragment = (matcher.matches()) ? matcher.group(1) : s.toString();
             s.delete(0, s.length());
             s.append(SET_PREFIX).append(fragment);
+            if (optimistic) {
+                String versionColumn = SqlProcessContext.getFeature(SqlFeature.VERSION_COLUMN);
+                if (versionColumn == null || ctx.dynamicInputValues == null)
+                    return;
+                Object version = BeanUtils.getProperty(ctx.dynamicInputValues, versionColumn);
+                if (version != null) {
+                    // TODO - based on version type modify SQL, like " ,version = version + 1 "
+                }
+            }
 
         } else if (type == Type.VALUES && ctx.sqlStatementType == SqlMetaStatement.Type.CREATE) {
             Matcher matcher = patternValues.matcher(s);
             String fragment = (matcher.matches()) ? matcher.group(1) : s.toString();
             s.delete(0, s.length());
             s.append(VALUES_PREFIX).append("(").append(fragment).append(")");
+            if (optimistic) {
+                String versionColumn = SqlProcessContext.getFeature(SqlFeature.VERSION_COLUMN);
+                if (versionColumn == null || ctx.dynamicInputValues == null)
+                    return;
+                Object version = BeanUtils.getProperty(ctx.dynamicInputValues, versionColumn);
+                if (version != null) {
+                    // TODO - based on version type modify SQL, like ", version <- 1 "
+                }
+            }
         }
     }
 
